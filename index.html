@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>С днем рождения, Милаша!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #050505;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="scene"></canvas>
+
+    <script>
+        const canvas = document.getElementById('scene');
+        const ctx = canvas.getContext('2d');
+
+        const CHARS = " ·⋆∘°✧✦♦❖♡♥";
+        const PALETTE = [, // Чистый белый, // Жемчужно-белый, // Нежно-розовый, // Ярко-розовый,  // Насыщенный малиновый
+            [175, 15, 95]    // Глубокий пурпурно-розовый
+        ];
+
+        const MESSAGE = "✧ ⋆  с днем рождения Милаша  ⋆ ✧";
+
+        let width, height, isMobile;
+        let angle = 0.0;
+        let phase = 0.0;
+        let heartReveal = 0.0;
+        let textReveal = 0.0;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            isMobile = width < 820; // Определяем, телефон это или широкий экран ПК
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function getGradientColor(x, y, phase, brightness = 1.0) {
+            const wave = Math.sin(x * 1.8 + y * 2.0 - phase) + 0.3 * Math.cos(x * 2.8 - phase * 0.7);
+            const t = Math.max(0.0, Math.min(1.0, (wave + 1.3) / 2.6));
+
+            const maxIdx = PALETTE.length - 1;
+            const scaledT = t * maxIdx;
+            const idx1 = Math.floor(scaledT);
+            const idx2 = Math.min(maxIdx, idx1 + 1);
+            const frac = scaledT - idx1;
+
+            const [r1, g1, b1] = PALETTE[idx1];
+            const [r2, g2, b2] = PALETTE[idx2];
+
+            const r = Math.floor((r1 + (r2 - r1) * frac) * brightness);
+            const g = Math.floor((g1 + (g2 - g1) * frac) * brightness);
+            const b = Math.floor((b1 + (b2 - b1) * frac) * brightness);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function render() {
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            // Адаптивный размер символов под экран телефона или ПК
+            const charSize = isMobile 
+                ? Math.max(8, Math.min(13, width / 62)) 
+                : Math.max(12, Math.min(18, width / 95));
+
+            const cellW = charSize * 0.65;
+            const cellH = charSize * 1.05;
+
+            ctx.font = `bold ${charSize}px Consolas, "Courier New", monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+
+            const ySteps = 29; // от 15 до -13
+            const xSteps = 64; // от -32 до 31
+
+            // Центрирование композиции на экране
+            const heartWidthPx = xSteps * cellW;
+            const heartHeightPx = ySteps * cellH;
+            const textWidthPx = MESSAGE.length * cellW;
+
+            let startX, startY;
+            if (isMobile) {
+                startX = (width - heartWidthPx) / 2;
+                startY = (height - (heartHeightPx + cellH * 4)) / 2;
+            } else {
+                const totalWidth = heartWidthPx + cellW * 4 + textWidthPx;
+                startX = (width - totalWidth) / 2;
+                startY = (height - heartHeightPx) / 2;
+            }
+
+            const visibleHeartRows = Math.floor(heartReveal * ySteps);
+
+            // 1. Отрисовка 3D-сердца
+            for (let rowIdx = 0; rowIdx < ySteps; rowIdx++) {
+                if (rowIdx > visibleHeartRows) break;
+
+                const rowBrightness = Math.min(1.0, (visibleHeartRows - rowIdx + 1) / 4.0);
+                const yStep = 15 - rowIdx;
+                const y = yStep * 0.1;
+
+                for (let colIdx = 0; colIdx < xSteps; colIdx++) {
+                    const xStep = colIdx - 32;
+                    const xScreen = xStep * 0.05;
+
+                    for (let zStep = 15; zStep >= -15; zStep--) {
+                        const zScreen = zStep * 0.08;
+                        const x = xScreen * cosA - zScreen * sinA;
+                        const z = xScreen * sinA + zScreen * cosA;
+
+                        const a = x * x + 2.25 * z * z + y * y - 1;
+                        const val = a * a * a - (x * x * y * y * y) - (0.1125 * z * z * y * y * y);
+
+                        if (val <= 0) {
+                            const light = (zScreen + 1.2) / 2.4;
+                            const idx = Math.floor(Math.max(0, Math.min(CHARS.length - 1, light * CHARS.length)));
+                            const charToDraw = CHARS[idx];
+
+                            if (charToDraw !== ' ') {
+                                ctx.fillStyle = getGradientColor(xScreen, y, phase, rowBrightness);
+                                ctx.fillText(
+                                    charToDraw,
+                                    startX + colIdx * cellW,
+                                    startY + rowIdx * cellH
+                                );
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 2. Отрисовка поздравления (справа на ПК, снизу на телефоне)
+            if (textReveal > 0) {
+                const visibleChars = textReveal * (MESSAGE.length + 4);
+                const textStartX = isMobile 
+                    ? (width - textWidthPx) / 2 
+                    : startX + heartWidthPx + cellW * 4;
+                const textStartY = isMobile 
+                    ? startY + heartHeightPx + cellH * 2.5 
+                    : startY + (ySteps / 2 - 1) * cellH;
+
+                for (let i = 0; i < MESSAGE.length; i++) {
+                    if (i > visibleChars) break;
+
+                    const ch = MESSAGE[i];
+                    const charBrightness = Math.min(1.0, (visibleChars - i + 1) / 4.0);
+                    const tx = 1.7 + i * 0.08;
+
+                    ctx.fillStyle = getGradientColor(tx, 0.2, phase, charBrightness);
+
+                    let displayChar = ch;
+                    if (ch === '✧' || ch === '⋆') {
+                        displayChar = Math.sin(phase * 1.5 + i) > 0 ? '♥' : '✧';
+                    }
+
+                    ctx.fillText(
+                        displayChar,
+                        textStartX + i * cellW,
+                        textStartY
+                    );
+                }
+            }
+
+            if (heartReveal < 1.0) {
+                heartReveal = Math.min(1.0, heartReveal + 0.02);
+            }
+            if (heartReveal > 0.45 && textReveal < 1.0) {
+                textReveal = Math.min(1.0, textReveal + 0.02);
+            }
+
+            angle += 0.045;
+            phase += 0.08;
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+</body>
+</html>
