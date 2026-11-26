@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>С днем рождения, Милаша!</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #050505;
             overflow: hidden;
@@ -20,9 +16,7 @@
             width: 100vw;
             font-family: 'Consolas', 'Courier New', monospace;
         }
-        canvas {
-            display: block;
-        }
+        canvas { display: block; }
     </style>
 </head>
 <body>
@@ -34,10 +28,10 @@
 
         const CHARS = " ·⋆∘°✧✦♦❖♡♥";
         
-        // 6-ступенчатая палитра от чистого белого до глубокого малинового
-        const R_VALS =;
-        const G_VALS =;
-        const B_VALS =;
+        // Палитра от белого к малиново-розовому
+        const R_VALS = new Array(255, 255, 255, 255, 235, 175);
+        const G_VALS = new Array(255, 230, 182, 105, 35, 15);
+        const B_VALS = new Array(255, 242, 213, 180, 125, 95);
 
         const MESSAGE = "✧ ⋆  с днем рождения Милаша  ⋆ ✧";
 
@@ -109,7 +103,6 @@
 
             const visibleHeartRows = Math.floor(heartReveal * ySteps);
 
-            // 1. Отрисовка 3D-сердца
             for (let rowIdx = 0; rowIdx < ySteps; rowIdx++) {
                 if (rowIdx > visibleHeartRows) break;
 
@@ -136,11 +129,7 @@
 
                             if (charToDraw !== ' ') {
                                 ctx.fillStyle = getGradientColor(xScreen, y, phase, rowBrightness);
-                                ctx.fillText(
-                                    charToDraw,
-                                    startX + colIdx * cellW,
-                                    startY + rowIdx * cellH
-                                );
+                                ctx.fillText(charToDraw, startX + colIdx * cellW, startY + rowIdx * cellH);
                             }
                             break;
                         }
@@ -148,7 +137,6 @@
                 }
             }
 
-            // 2. Отрисовка текста (справа на ПК, снизу на телефоне)
             if (textReveal > 0) {
                 const visibleChars = textReveal * (MESSAGE.length + 4);
                 const textStartX = isMobile 
@@ -172,20 +160,12 @@
                         displayChar = Math.sin(phase * 1.5 + i) > 0 ? '♥' : '✧';
                     }
 
-                    ctx.fillText(
-                        displayChar,
-                        textStartX + i * cellW,
-                        textStartY
-                    );
+                    ctx.fillText(displayChar, textStartX + i * cellW, textStartY);
                 }
             }
 
-            if (heartReveal < 1.0) {
-                heartReveal = Math.min(1.0, heartReveal + 0.02);
-            }
-            if (heartReveal > 0.45 && textReveal < 1.0) {
-                textReveal = Math.min(1.0, textReveal + 0.02);
-            }
+            if (heartReveal < 1.0) heartReveal = Math.min(1.0, heartReveal + 0.02);
+            if (heartReveal > 0.45 && textReveal < 1.0) textReveal = Math.min(1.0, textReveal + 0.02);
 
             angle += 0.045;
             phase += 0.08;
